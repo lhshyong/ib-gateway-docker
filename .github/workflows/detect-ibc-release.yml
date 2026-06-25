@@ -61,12 +61,15 @@ jobs:
       - name: Check if branch already exists
         id: verify_branch
         if: ${{ steps.verify_latest.outputs.update == 'true' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          latest=${{ steps.ibc_version.outputs.IBC_LATEST }}
-          prefix=${{ env.BRANCH_PREFIX }}
-          search=${prefix}-${latest}
+          latest="${{ steps.ibc_version.outputs.IBC_LATEST }}"
+          prefix="${{ env.BRANCH_PREFIX }}"
+          search="${prefix}-${latest}"
 
-          if [ "$(git branch --list | grep ${search})" ]; then
+          if git ls-remote --exit-code --heads origin "refs/heads/${search}" >/dev/null 2>&1 \
+             || gh pr list --head "${search}" --state open --json number --jq 'length > 0' >/dev/null; then
             echo "BRANCH_EXISTS=true" >> $GITHUB_OUTPUT
           else
             echo "BRANCH_EXISTS=false" >> $GITHUB_OUTPUT
